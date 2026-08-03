@@ -4,6 +4,7 @@ import { DATABASE_CONNECTION } from 'src/database/database.constants';
 import * as schema from '../database/schema/tasks.schema';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { desc, eq } from 'drizzle-orm';
+import { UpdateTaskDto } from './dto/update-task.dto';
 
 @Injectable()
 export class TasksService {
@@ -44,5 +45,35 @@ export class TasksService {
     }
 
     return task;
+  }
+
+  async update(id: string, updateDto: UpdateTaskDto) {
+    const [updateTask] = await this.database
+      .update(schema.tasks)
+      .set({
+        ...updateDto,
+        updatedAt: new Date(),
+      })
+      .where(eq(schema.tasks.id, id))
+      .returning();
+
+    if (!updateTask) {
+      throw new NotFoundException(`Task with ID "${id}" was not found`);
+    }
+
+    return updateTask;
+  }
+
+  async remove(id: string) {
+    const [deletedTask] = await this.database
+      .delete(schema.tasks)
+      .where(eq(schema.tasks.id, id))
+      .returning();
+
+    if (!deletedTask) {
+      throw new NotFoundException(`Task with ID "${id}" was not found`);
+    }
+
+    return deletedTask;
   }
 }
