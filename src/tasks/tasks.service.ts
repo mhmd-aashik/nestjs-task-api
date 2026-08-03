@@ -3,6 +3,7 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DATABASE_CONNECTION } from 'src/database/database.constants';
 import * as schema from '../database/schema/tasks.schema';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { desc } from 'drizzle-orm';
 
 @Injectable()
 export class TasksService {
@@ -22,5 +23,12 @@ export class TasksService {
       .returning();
 
     return createdTask;
+  }
+
+  async findAll() {
+    return await this.database
+      .select()
+      .from(schema.tasks)
+      .orderBy(desc(schema.tasks.createdAt));
   }
 }
