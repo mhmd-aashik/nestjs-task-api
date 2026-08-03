@@ -1,4 +1,26 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { DATABASE_CONNECTION } from 'src/database/database.constants';
+import * as schema from '../database/schema/tasks.schema';
+import { CreateTaskDto } from './dto/create-task.dto';
 
 @Injectable()
-export class TasksService {}
+export class TasksService {
+  constructor(
+    @Inject(DATABASE_CONNECTION)
+    private readonly database: NodePgDatabase<typeof schema>,
+  ) {}
+
+  async create(createDto: CreateTaskDto) {
+    const [createdTask] = await this.database
+      .insert(schema.tasks)
+      .values({
+        title: createDto.title,
+        description: createDto.description,
+        completed: createDto.completed,
+      })
+      .returning();
+
+    return createdTask;
+  }
+}
