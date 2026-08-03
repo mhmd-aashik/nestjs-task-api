@@ -3,8 +3,11 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DATABASE_CONNECTION } from 'src/database/database.constants';
 import * as schema from '../database/schema/tasks.schema';
 import { CreateTaskDto } from './dto/create-task.dto';
-import { desc, eq } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, or } from 'drizzle-orm';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { QueryTasksDto } from './dto/query-tasks.dto';
+import { PaginatedResult } from 'src/lib/common/interfaces/api-response.interface';
+import { paginateResult } from 'src/lib/common/utils/pagination.util';
 
 @Injectable()
 export class TasksService {
@@ -26,11 +29,51 @@ export class TasksService {
     return createdTask;
   }
 
-  async findAll() {
-    return await this.database
-      .select()
-      .from(schema.tasks)
-      .orderBy(desc(schema.tasks.createdAt));
+  async findAll(
+    queryDto: QueryTasksDto,
+  ): Promise<PaginatedResult<schema.Task>> {
+    const { page, limit, search, completed, sortBy, sortOrder } = queryDto;
+
+    const filters = and(
+      search
+        ? or(
+            ilike(schema.tasks.title, `%${search.trim()}%`),
+            ilike(schema.tasks.description, `%${search.trim()}%`),
+          )
+        : undefined,
+
+      completed !== undefined
+        ? eq(schema.tasks.completed, completed === 'true')
+        : undefined,
+    );
+
+    const sortColumns = {
+      createdAt: schema.tasks.createdAt,
+      updatedAt: schema.tasks.updatedAt,
+      title: schema.tasks.title,
+    };
+
+    const orderBy =
+      sortOrder === 'asc'
+        ? asc(sortColumns[sortBy])
+        : desc(sortColumns[sortBy]);
+
+    const [items, [{ total }]] = await Promise.all([
+      this.database
+        .select()
+        .from(schema.tasks)
+        .where(filters)
+        .orderBy(orderBy)
+        .limit(limit)
+        .offset((page - 1) * limit),
+
+      this.database
+        .select({ total: count() })
+        .from(schema.tasks)
+        .where(filters),
+    ]);
+
+    return paginateResult(items, Number(total), page, limit);
   }
 
   async findOne(id: string) {

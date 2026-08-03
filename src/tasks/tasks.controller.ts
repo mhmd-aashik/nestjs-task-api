@@ -8,10 +8,12 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { QueryTasksDto } from './dto/query-tasks.dto';
 
 @Controller('tasks')
 export class TasksController {
@@ -24,8 +26,8 @@ export class TasksController {
   }
 
   @Get()
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(@Query() queryDto: QueryTasksDto) {
+    return this.tasksService.findAll(queryDto);
   }
 
   @Get(':id')
