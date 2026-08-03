@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsIn,
   IsInt,
@@ -9,11 +10,13 @@ import {
 } from 'class-validator';
 
 export class QueryTasksDto {
+  @Type(() => Number)
   @IsOptional()
   @IsInt()
   @Min(1)
   page: number = 1;
 
+  @Type(() => Number)
   @IsOptional()
   @IsInt()
   @Min(1)
